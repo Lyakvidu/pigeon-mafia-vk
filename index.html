@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru" data-starting>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b2031">
+<title>Голубиная мафия — Картошка фри</title>
+<script src="vendor/vk-bridge.min.js"></script>
+<script src="platform.js"></script>
+<script src="launch.js" data-target="vk" data-files="commercial.js,scenery.js,sprites.js,audio.js,districts.js,world-data.js,neighborhoods.js,operations-model.js,operations-runtime.js,i18n.js,save-model.js,campaign-content.js,campaign.js,game.js,roof-art.js,interface.js"></script>
+<style>
+html[data-starting] {background:#1b2031;color:#f3d59c}
+html[data-starting] #app {visibility:hidden}
+#launch-message {display:none}
+html[data-starting] #launch-message {display:grid;place-items:center;position:fixed;inset:0;font:600 20px system-ui}
+</style>
+</head>
+<body>
+<div id="launch-message" role="status">Pigeon Mafia</div>
+<main id="app" data-screen="menu">
+<p id="save-error" role="alert" hidden></p>
+  <section id="game-screen" class="game-screen" aria-label="Операция «Картошка фри»" hidden inert>
+    <div class="playfield">
+      <header class="hud">
+        <div class="mission"><span>ОПЕРАЦИЯ 01</span><strong>КАРТОШКА ФРИ</strong></div>
+        <div class="stash"><canvas data-art="fries" width="20" height="18" aria-hidden="true"></canvas><output id="loot" aria-label="Картошка в гнезде">0/2</output></div>
+        <button id="pause" class="pause" aria-label="Пауза" title="Пауза (Esc)"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 2h4v12H3zm6 0h4v12H9z"/></svg></button>
+      </header>
+      <div class="tip-line"><span class="tip-pip" aria-hidden="true">›</span><p id="tip" role="status"></p></div>
+      <div class="stage">
+        <canvas id="square" width="320" height="346" aria-label="Игровая площадь. Касание задаёт путь голубю."></canvas>
+        <output id="danger" class="danger">ТИХО</output>
+        <div id="field-note" class="field-note" hidden><strong id="field-action"></strong><span id="field-teaching"></span></div>
+        <section id="result" class="result" hidden aria-labelledby="result-title">
+          <canvas id="result-art" width="120" height="50" aria-hidden="true"></canvas>
+          <p id="result-label"></p><h2 id="result-title"></h2><p id="result-text"></p><p id="reward" role="status"></p>
+          <button id="bonus-ad" class="menu-item" hidden>Реклама · +10 крошек</button>
+          <button id="next-order" class="menu-item primary">К заказам</button><button id="again" class="menu-item">Ещё налёт</button>
+          <button id="result-menu" class="menu-item">В главное меню</button>
+        </section>
+      </div>
+    </div>
+    <section class="controls" aria-label="Управление">
+      <div id="joystick" class="stick" role="group" aria-label="Джойстик движения">
+        <svg viewBox="0 0 96 96" aria-hidden="true"><path d="M48 5 54 12H42ZM48 91 54 84H42ZM5 48 12 42v12ZM91 48 84 42v12Z"/></svg><div class="thumb"></div>
+      </div>
+      <div class="key-cluster"><div class="keys">
+        <button id="ability" hidden>ВЗЛЁТ</button>
+        <button id="call" class="command call" hidden><canvas data-art="ally" width="32" height="24" aria-hidden="true"></canvas><b id="flock-label">ПОЗВАТЬ</b></button>
+        <button id="action" class="command action" hidden><canvas data-art="peck" width="32" height="24" aria-hidden="true"></canvas><b id="action-label">КЛЮНУТЬ</b></button>
+      </div>
+    </div></section>
+    <div class="keyboard-hint desktop"><span><kbd>WASD</kbd> Движение</span><span><kbd>E</kbd> <span id="pc-action"></span></span><span><kbd>Q</kbd> <span id="pc-flock"></span></span><span id="pc-flight" hidden><kbd>F</kbd> <span></span></span><span><kbd id="pause-key">Esc</kbd> Пауза</span></div>
+  </section>
+
+  <section id="menu-screen" class="menu-screen screen" aria-label="Главное меню">
+    <header class="roof-header">
+      <div class="title-block"><p class="maker">LYAGAME</p><h1><span>ГОЛУБИНАЯ</span><strong>МАФИЯ</strong></h1></div>
+      <div class="roof-brief"><p class="eyebrow">ШТАБ СТАИ</p><button id="continue" class="roof-continue" disabled><strong id="continue-label">Продолжить дело</strong><small id="continue-job"></small></button></div>
+    </header>
+    <nav class="roof-scene" aria-label="Предметы на крыше">
+      <canvas id="title-art" width="384" height="216" aria-label="Крыша штаба стаи над вечерним городом"></canvas>
+      <button id="play" class="roof-pin" style="--x:19%;--y:67%">Карта дел</button>
+      <button id="open-nest" class="roof-pin" style="--x:51%;--y:80%">Гнездо и стая</button>
+      <button id="open-settings" class="roof-pin" style="--x:82%;--y:71%">Настройки</button>
+    </nav>
+    <footer><button id="open-help">Как играть</button><p id="roof-progress"></p><button id="open-credits">Об игре</button></footer>
+  </section>
+
+  <section id="pause-screen" class="sheet screen" aria-labelledby="pause-title" hidden>
+    <p class="eyebrow">СТАЯ НА ПЕРЕКУРЕ</p><h2 id="pause-title">Пауза</h2>
+    <canvas data-art="pigeon" class="pause-bird" width="40" height="28" aria-hidden="true"></canvas>
+    <nav class="menu-list"><button id="resume" class="menu-item primary">Продолжить</button><button id="pause-settings" class="menu-item">Настройки</button><button id="restart" class="menu-item">Начать заново</button><button id="home" class="menu-item">В главное меню</button></nav>
+  </section>
+
+  <section id="settings-screen" class="sheet screen" aria-labelledby="settings-title" hidden>
+    <p class="eyebrow">ПОД СЕБЯ</p><h2 id="settings-title">Настройки</h2>
+    <div class="settings-list">
+<label class="language-row" for="language"><span>Язык / Language</span><select id="language"><option value="ru">Русский</option><option value="en">English</option></select></label>
+      <label class="volume" for="music"><span>Музыка</span><output id="music-value">35%</output><input id="music" type="range" min="0" max="100" step="5" value="35"></label>
+      <label class="volume" for="effects"><span>Звуки</span><output id="effects-value">65%</output><input id="effects" type="range" min="0" max="100" step="5" value="65"></label>
+      <label class="toggle"><span>Подсказки</span><input id="hints" type="checkbox" checked><span class="check" aria-hidden="true"></span></label>
+      <label class="toggle"><span>Джойстик справа</span><input id="left-handed" type="checkbox"><span class="check" aria-hidden="true"></span></label>
+      <label class="toggle"><span>Меньше анимации</span><input id="reduced-motion" type="checkbox"><span class="check" aria-hidden="true"></span></label>
+      <label class="toggle"><span>Без звука</span><input id="muted" type="checkbox"><span class="check" aria-hidden="true"></span></label>
+    </div>
+    <div id="save-transfer" hidden><button id="export-save" class="text-button">Скачать сохранение</button><button id="import-save" class="text-button">Восстановить из файла</button><input id="save-file" type="file" accept=".json,application/json" hidden><p id="transfer-note" role="status"></p></div>
+    <button id="defaults" class="text-button">Сбросить настройки</button>
+    <button data-back class="menu-item primary back">Назад</button>
+  </section>
+
+  <section id="help-screen" class="sheet screen" aria-labelledby="help-title" hidden>
+    <p class="eyebrow">ИНСТРУКТАЖ СТАИ</p><h2 id="help-title">План налёта</h2>
+    <ol class="help-list">
+      <li><canvas data-art="walk" width="32" height="28" aria-hidden="true"></canvas><div><b>Подойди к столику</b><p class="mobile">Веди голубя джойстиком или коснись площади.</p><p class="desktop">WASD, стрелки или щелчок мышью по площади.</p></div></li>
+      <li><canvas data-art="fries" width="32" height="28" aria-hidden="true"></canvas><div><b>Утащи картошку</b><p>Нажми «Украсть» рядом с едой.<span class="desktop"> На клавиатуре — E или пробел.</span></p></div></li>
+      <li><canvas data-art="ally" width="32" height="28" aria-hidden="true"></canvas><div><b>Позови своих</b><p>«Стая» рядом с голубем зовёт его с собой. У столика — отвлекает людей.<span class="desktop"> Клавиша Q.</span></p></div></li>
+      <li><canvas data-art="nest" width="32" height="28" aria-hidden="true"></canvas><div><b>Накорми семью</b><p>Принеси две порции в гнездо слева внизу. Дворника обходи, от кота уворачивайся.</p></div></li>
+    </ol>
+    <button data-back class="menu-item primary back">Всё понятно</button>
+  </section>
+
+  <section id="credits-screen" class="sheet screen" aria-labelledby="credits-title" hidden>
+    <p class="eyebrow">LYAGAME</p><h2 id="credits-title">Голубиная<br>мафия</h2>
+    <div class="credits-copy"><p>Шесть районов. Пятнадцать глав.<br>Своя стая и своё гнездо.</p><p>Графика LyaGame / Ляквиду. Музыка и звуки Joth (CC0).</p><p>Шрифт Golos Text<br>Лицензия SIL OFL 1.1</p><a href="assets/GOLOS-LICENSE.txt" target="_blank" rel="noopener">Golos Text ↗</a></div>
+    <button data-back class="menu-item primary back">Назад</button>
+  </section>
+
+  <section id="board-screen" class="screen board-screen" aria-labelledby="board-title" hidden>
+    <header class="board-header"><div><p class="eyebrow">ДЕЛА СТАИ</p><h2 id="board-title">Карта города</h2></div><output class="wallet"></output></header>
+    <nav class="board-nav map-tools"><button id="board-home" class="text-button">На крышу</button><button id="board-challenges" class="text-button" aria-pressed="false">Испытания</button><button id="board-nest" class="text-button">Гнездо и стая</button></nav>
+    <div class="city-map" aria-label="Шесть районов">
+      <canvas id="city-art" width="384" height="218" aria-hidden="true"></canvas>
+      <nav id="district-nav" aria-label="Районы города"></nav>
+    </div>
+    <p id="city-progress" class="city-progress"></p>
+    <div class="city-casework">
+      <div><nav id="chapter-nav" class="chapter-nav" aria-label="Главы кампании"></nav><p id="chapter-progress" class="eyebrow"></p><div id="order-list" class="order-list"></div></div>
+      <div id="order-brief"><h3 id="order-title"></h3><p id="order-intro"></p><p id="order-unlock"></p><details id="order-route" hidden><summary>Весь маршрут</summary><p id="order-route-text"></p></details><p id="order-record"></p><button id="launch-order" class="menu-item primary">На дело</button></div>
+    </div>
+  </section>
+  <section id="nest-screen" class="screen nest-screen" aria-labelledby="nest-title" hidden>
+    <header class="board-header"><div><p class="eyebrow">ДОМ СТАИ</p><h2 id="nest-title">Гнездо</h2></div><output class="wallet"></output></header>
+    <canvas id="nest-art" width="384" height="216" aria-label="Развитие гнезда и стаи"></canvas>
+    <p id="flock-progress"></p>
+    <div id="upgrade-list"></div><p id="purchase-note" role="status"></p>
+    <button id="nest-orders" class="menu-item primary">К заказам</button>
+    <button id="nest-home" class="text-button">Главное меню</button>
+  </section>
+</main>
+<div id="ad-pause" role="status" hidden>Рекламная пауза</div>
+</body>
+</html>

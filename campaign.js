@@ -1,0 +1,150 @@
+'use strict';
+const CAMPAIGN = [
+  {id:'fries', title:'Картошка фри', en:'French fry job', district:'square', mode:'steal', goal:2, reward:30, par:18, intro:'Укради две порции с любых столиков и принеси их в гнездо.', unlock:'Дальше — отвлечение прохожих стаей.'},
+  {id:'distraction', title:'Шумная компания', en:'A noisy crowd', district:'square', mode:'distraction', goal:1, reward:40, par:12, intro:'Позови голубя. Отвлеки людей у левого столика и забери пакет, пока они смотрят на стаю.', unlock:'Дальше — доставка через всю площадь.'},
+  {id:'courier', title:'Письмо на лапке', en:'Special delivery', district:'square', mode:'courier', goal:2, reward:45, par:20, intro:'Забери письмо у кафе, отметься у правой скамейки и вернись в гнездо. Дворник следит за курьером.', unlock:'Откроется короткий полёт — кнопка «Взлёт».'},
+  {id:'rescue', title:'Своих не бросаем', en:'Leave no bird behind', district:'square', mode:'rescue', goal:1, reward:55, par:16, intro:'Трижды клюнь замок клетки. Освобождённый голубь пойдёт за тобой. Доведи его до гнезда.', unlock:'В стаю вступит разведчик Сизый. Он показывает поле зрения дворника.'},
+  {id:'territory', title:'Наш двор', en:'Our turf', district:'square', mode:'territory', goal:3, reward:60, par:23, intro:'Приведи союзника к каждому из трёх флажков. Нажми «Занять» и удержи место. Стая отгоняет соперников.', unlock:'Откроются рынок и дополнительные испытания.'},
+  {id:'wind', title:'Против ветра', en:'Against the wind', district:'market', mode:'wind', goal:2, reward:60, par:17, intro:'Забери ветки у дальнего прилавка. Пройди через метку у канала и доставь их домой. Взлёт помогает против ветра.', unlock:'В стаю вступит курьер Рыжик. С ним груз несут быстрее.'},
+  {id:'quiet', title:'Тихая смена', en:'Quiet shift', district:'market', mode:'quiet', goal:1, reward:65, par:20, intro:'Дождись открытия среднего прилавка, забери заказ и вернись. Две замеченные кражи сорвут операцию.', unlock:'Дальше — выманивание дворника к двум меткам.'},
+  {id:'lure', title:'Уборка по плану', en:'Sweep the way', district:'market', mode:'lure', goal:2, reward:70, par:23, intro:'У каждой метки свистни дворнику и отойди. Он должен дойти до обеих меток. Затем вернись в гнездо.', unlock:'В стаю вступит Гром. Его крик на время отпугивает кота.'},
+  {id:'escort', title:'Через весь рынок', en:'Across the market', district:'market', mode:'escort', goal:2, reward:75, par:18, intro:'Позови двух голубей у прилавков. Проведи обоих через метку у канала и доведи до гнезда.', unlock:'Откроется общий налёт с разведкой, спасением и тяжёлым грузом.'},
+  {id:'finale', title:'Большой налёт', en:'The big heist', district:'market', mode:'finale', goal:3, reward:100, par:23, intro:'Открой задвижку слева, освободи голубя, затем унеси большой ящик из правого прилавка. Нужны два союзника.', unlock:'Все заказы открыты. Улучшай рекорды и пробуй испытания.'}
+];
+const CHALLENGES = [
+  {id:'challenge-flags', title:'Перехват квартала', en:'Block takeover', district:'square',mode:'territory',goal:3,reward:25,par:18,variant:1,intro:'Соперники быстрее. Займи три точки с союзником. Стая и взлёт помогут оторваться.',unlock:'Рекорд сохраняется. Награда выдаётся за первое прохождение.'},
+  {id:'challenge-wind', title:'Срочная посылка', en:'Express parcel',district:'market',mode:'wind',goal:2,reward:25,par:12,variant:1,intro:'Тележка движется быстрее, ветер сильнее. Забери ветки, пройди метку и вернись.',unlock:'Рекорд сохраняется. Награда выдаётся за первое прохождение.'},
+  {id:'challenge-lure',title:'Двойной обход',en:'Double diversion',district:'market',mode:'lure',goal:2,reward:25,par:20,variant:1,intro:'Дворник идёт быстрее. Вымани его к обеим меткам и вернись домой.',unlock:'Рекорд сохраняется. Награда выдаётся за первое прохождение.'}
+];
+const UPGRADES = [
+  {id:'nest',title:'Уютное гнездо',en:'A proper nest',prices:[40,85],description:'Новая подстилка и навес. При доставке быстрее восстанавливается взлёт.'},
+  {id:'wings',title:'Сильные крылья',en:'Strong wings',prices:[50,90],description:'Взлёт восстанавливается на секунду быстрее за каждый уровень.'},
+  {id:'flock',title:'Сбор стаи',en:'Flock rally',prices:[70,110],description:'По одному союзнику ждёт у гнезда за каждый уровень.'},
+  {id:'signal',title:'Связь стаи',en:'Flock signals',prices:[160,300,480],requires:'c03-10',description:'Дальше слышен зов, быстрее готово отвлечение.',descriptionEn:'Recruit from farther away and recover distractions faster.'},
+  {id:'satchel',title:'Курьерская выучка',en:'Courier training',prices:[240,420,680],requires:'c07-10',description:'Голубь быстрее несёт груз. Все пути доступны и без улучшения.',descriptionEn:'Carry cargo faster. No route requires this upgrade.'},
+  {id:'watch',title:'Дозорные',en:'Flock lookouts',prices:[360,600,900],requires:'c11-10',description:'Раньше предупреждают о коте и помогают меньше попадаться дворнику.',descriptionEn:'More time to dodge a cat and a shorter sweeper detection range.'}
+];
+CAMPAIGN.forEach(m=>{m.chapter=1;});
+CAMPAIGN[9].unlock='Дальше — сад старого фонтана и новые дела стаи.';
+CAMPAIGN[9].unlockEn='Next: the fountain gardens and new flock business.';
+CAMPAIGN.push(...EXPANSION);
+CHALLENGES.push(...EXTRA_CHALLENGES);
+const PROGRESS = (() => {
+  let db, snapshot, error='', preferences={}, pending=Promise.resolve(), cloudLost=false;
+  const platform=window.RELEASE?.target&&window.RELEASE.target!=='web'?window.RELEASE:null;
+  const empty=()=>SAVE_MODEL.migrate(null,UPGRADES);
+  function publish(data) { snapshot=data; window.dispatchEvent(new Event('progress-changed')); }
+  function failure() { error='Не удалось сохранить прогресс. Разреши хранение данных сайта и попробуй ещё раз.'; }
+  function transactLocal(update) {
+    return new Promise((resolve,reject)=>{
+      if(!db) return reject(new Error(error||'Хранилище пока недоступно.'));
+      const tx=db.transaction('save','readwrite');
+      const store=tx.objectStore('save');
+      const read=store.get('campaign');
+      let result, data;
+      read.onsuccess=()=>{
+        try { data=SAVE_MODEL.migrate(read.result,UPGRADES);result=update(data);store.put(data,'campaign'); }
+        catch(e){error=e.message;tx.abort();reject(e);}
+      };
+      tx.oncomplete=()=>{error='';publish(data);resolve(result);};
+      tx.onerror=()=>{failure();reject(new Error(error));};
+      tx.onabort=()=>reject(new Error(error||'Операция сохранения отменена.'));
+    });
+  }
+  function envelope(progress=snapshot||empty()) {return {format:1,progress,preferences};}
+  function unpack(value) {
+    if(value===null)return {progress:empty(),preferences:{}};
+    if(value?.format!==1)throw new Error('Повреждены данные прогресса.');
+    return {progress:SAVE_MODEL.validated(value.progress,UPGRADES,[...CAMPAIGN,...CHALLENGES]),
+      preferences:value.preferences&&typeof value.preferences==='object'&&!Array.isArray(value.preferences)?value.preferences:{}};
+  }
+  function bounded(promise) {
+    let timer;
+    return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Хранилище пока недоступно.')),5000);})]).finally(()=>clearTimeout(timer));
+  }
+  async function readPlatform() {
+    if(!platform.host)throw new Error('Хранилище пока недоступно.');
+    return unpack(await bounded(platform.host.load()));
+  }
+  function transactPlatform(update,mustPersist=false) {
+    const run=async()=>{
+      let data=structuredClone(snapshot||empty());
+      if(!cloudLost) {
+        try {data=(await readPlatform()).progress;}
+        catch {cloudLost=true;failure();}
+      }
+      if(mustPersist&&cloudLost)throw new Error('Хранилище пока недоступно.');
+      const result=update(data);
+      if(!cloudLost) {
+        try {await bounded(platform.host.save(envelope(data)));error='';}
+        catch {cloudLost=true;failure();}
+      }
+      if(mustPersist&&cloudLost)throw new Error(error);
+      publish(data);
+      return result;
+    };
+    const job=pending.then(()=>navigator.locks?navigator.locks.request('pigeon-mafia-'+platform.target,run):run());
+    pending=job.catch(()=>{});
+    return job;
+  }
+  const transact=platform?transactPlatform:transactLocal;
+  const ready=platform?readPlatform().then(value=>{preferences=value.preferences;publish(value.progress);},()=>{
+    cloudLost=true;failure();publish(empty());
+  }):new Promise(resolve=>{
+    try {
+      const request=indexedDB.open('pigeon-mafia',1);
+      request.onupgradeneeded=()=>request.result.createObjectStore('save');
+      request.onerror=()=>{failure();publish(empty());resolve();};
+      request.onsuccess=()=>{
+        db=request.result;
+        db.onversionchange=()=>{db.close();db=null;failure();};
+        transact(()=>null).then(resolve).catch(resolve);
+      };
+    } catch {failure();publish(empty());resolve();}
+  });
+  function unlocked(mission) {
+    if(![...CAMPAIGN,...CHALLENGES].some(m=>m.id===mission?.id))return false;
+    return SAVE_MODEL.unlocked(snapshot||empty(),mission,CAMPAIGN);
+  }
+  return {
+    ready,
+    state:()=>structuredClone(snapshot||empty()),
+    error:()=>error,
+    unlocked,
+    next:()=>CAMPAIGN.find(m=>!snapshot?.completed[m.id])||CHALLENGES[0],
+    preferences:()=>structuredClone(preferences),
+    async setPreferences(value) {
+      if(!platform)return;
+      await ready;
+      preferences={...preferences,...value};
+      return transact(()=>null);
+    },
+    async exportSave() {
+      await ready;
+      return structuredClone(envelope());
+    },
+    async importSave(value) {
+      await ready;
+      const incoming=unpack(value).progress;
+      if(platform&&cloudLost)throw new Error('Хранилище пока недоступно.');
+      return transact(data=>{
+        if(platform&&cloudLost)throw new Error('Хранилище пока недоступно.');
+        if(Object.keys(data.completed).length||data.crumbs||Object.values(data.upgrades).some(Boolean))throw new Error('Восстановление доступно только для пустого сохранения.');
+        Object.assign(data,incoming);
+      },true);
+    },
+    async claimAd(id) {
+      await ready;
+      return transact(data=>SAVE_MODEL.bonus(data,id,CAMPAIGN),true);
+    },
+    async complete(mission,stats) {
+      await ready;
+      return transact(data=>SAVE_MODEL.complete(data,mission.id,stats.time,CAMPAIGN,CHALLENGES));
+    },
+    async buy(id) {
+      await ready;
+      return transact(data=>SAVE_MODEL.buy(data,id,UPGRADES));
+    },
+    refresh:async()=>{await ready;if(platform&&!cloudLost){const fresh=await readPlatform();publish(fresh.progress);}else if(db)await transact(()=>null);}
+  };
+})();

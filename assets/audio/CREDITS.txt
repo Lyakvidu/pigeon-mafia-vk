@@ -1,0 +1,8 @@
+Game artwork and design: LyaGame / Ляквиду.
+
+Music: “Bossa Nova” (8bit Bossa), Joth, CC0 1.0.
+https://opengameart.org/content/bossa-nova
+Effects: “7 Assorted Sound Effects (Menu, Level Up)”, Joth, CC0 1.0.
+https://opengameart.org/content/7-assorted-sound-effects-menu-level-up
+https://creativecommons.org/publicdomain/zero/1.0/
+These recordings were trimmed and encoded as MP3 for the commercial builds.
