@@ -142,7 +142,6 @@ h1 span,h1 strong{letter-spacing:-.025em}
   .result .menu-item{font-size:15px;min-height:36px}
 }
 .done-mark::after{content:'';display:block;width:7px;height:12px;border-right:2px solid #8fc3b1;border-bottom:2px solid #8fc3b1;transform:rotate(40deg);margin:auto}
-.chapter-nav select{width:100%;min-height:44px;background:#242b3b;color:var(--paper);font:600 16px Golos,sans-serif;border:0;border-bottom:2px solid #829b91;padding:8px 28px 8px 8px;border-radius:0}
 #chapter-progress{font-size:11px;letter-spacing:.02em;margin:13px 0}
 #order-route{font-size:13px;line-height:1.55;color:#bbc4c5;margin:12px 0}
 #order-route summary{cursor:pointer;color:#bdd1bf;padding:7px 0}
@@ -249,21 +248,46 @@ kbd{font:650 11px Golos,sans-serif;color:#ffdc9a;border:1px solid #7a7279;border
 .district-pin[aria-pressed=true]{background:#e1ae72;color:#292434;border-color:#ffe2a2 #9e6957 #9e6957}
 .district-pin[aria-pressed=true] small{color:#493d42}
 .city-progress{text-align:center;color:var(--mint);font-size:13px;margin:10px 0 17px}
+.campaign-catalog{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:20px;align-items:start}
+.chapter-index-title,#order-heading{margin:0 0 12px;font-size:clamp(17px,4.7vw,23px);color:var(--paper)}
+.chapter-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 14px}
+.chapter-district{min-width:0;border-top:2px solid #6a5963;scroll-margin-block:10px}
+.chapter-district[data-active=true]{border-color:var(--yellow)}
+.chapter-district h4{margin:5px 3px;color:var(--mint);font-size:13px}
+.chapter-entry{display:grid;grid-template-columns:23px minmax(0,1fr) 12px;gap:5px;align-items:center;width:100%;min-height:48px;padding:5px 4px;border-top:1px solid #394253;text-align:left}
+.chapter-entry[aria-current=true]{background:#292d40}
+.chapter-entry[aria-current=true] strong{color:var(--yellow)}
+.chapter-number{color:#d5a572;font-size:12px;font-variant-numeric:tabular-nums}
+.chapter-info{min-width:0}
+.chapter-info strong,.chapter-info small{display:block;overflow-wrap:anywhere}
+.chapter-info strong{font-size:14px;line-height:1.2}
+.chapter-info small,.order-location{color:#a9b7bc;font-size:11px;line-height:1.25;margin-top:3px}
+.chapter-entry[data-locked=true] .chapter-info small{color:#d3ab94}
+.chapter-entry>span:last-child{color:var(--mint);text-align:center}
+.lock-mark{position:relative;display:block;width:11px;height:8px;margin:5px auto 0;background:#c3a18f;border:1px solid #e2c5a9}
+.lock-mark::before{content:'';position:absolute;box-sizing:border-box;width:7px;height:6px;left:1px;bottom:6px;border:2px solid #e2c5a9;border-bottom:0}
+.lock-mark::after{content:'';position:absolute;left:4px;top:2px;width:1px;height:3px;background:var(--ink)}
+#chapter-back{min-height:44px;margin:0 0 10px}
+#order-district{margin:0 0 6px}
+.order-location{display:block}
 .city-casework{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 24px;align-items:start}
 .city-casework #order-brief{margin:0;padding:12px 0;border-top:3px solid #9f7b70}
-.order-row[data-locked=true]{color:#afb0bb}.order-row:hover{background:#292d40}.order-row{min-height:44px}
+.order-row[data-locked=true]{color:#afb0bb}.order-row{min-height:44px}
+@media(hover:hover){.chapter-entry:hover,.order-row:hover{background:#292d40}}
 #launch-order{white-space:normal}#launch-order:disabled{color:#a79e9d}#launch-order:disabled::before{visibility:hidden}
 #nest-art{display:block;border-bottom:3px solid #9e776c}
+@media(max-width:700px){
+  .campaign-catalog{grid-template-columns:minmax(0,1fr);gap:0}
+}
 @media(max-width:560px){
   .roof-header{grid-template-columns:1fr;gap:14px}
   .roof-header .title-block{text-align:center}.roof-brief .eyebrow{display:none}
   .roof-continue{min-height:58px}
   .city-casework{grid-template-columns:1fr;gap:6px}
-  .city-casework>div:first-child{display:contents}
-  .city-casework #order-brief{grid-row:3}
   .district-pin{font-size:12px}
   #chapter-progress{margin:5px 0 9px}
 }
+@media(max-width:359px){.chapter-nav{grid-template-columns:minmax(0,1fr)}}
 
 /* Hosted portals keep the document fixed and scroll the menu, map or nest internally. */
 html,body{height:100%;overflow:hidden;overscroll-behavior:none}

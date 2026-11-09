@@ -111,7 +111,8 @@ const PROGRESS = (() => {
     state:()=>structuredClone(snapshot||empty()),
     error:()=>error,
     unlocked,
-    next:()=>CAMPAIGN.find(m=>!snapshot?.completed[m.id])||CHALLENGES[0],
+    next:()=>CAMPAIGN.find(m=>!snapshot?.completed[m.id]&&unlocked(m))||
+      CHALLENGES.find(m=>!snapshot?.completed[m.id]&&unlocked(m))||CHALLENGES.find(unlocked),
     preferences:()=>structuredClone(preferences),
     async setPreferences(value) {
       if(!platform)return;

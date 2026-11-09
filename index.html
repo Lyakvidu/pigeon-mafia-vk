@@ -109,14 +109,28 @@ html[data-starting] #launch-message {display:grid;place-items:center;position:fi
   <section id="board-screen" class="screen board-screen" aria-labelledby="board-title" hidden>
     <header class="board-header"><div><p class="eyebrow">ДЕЛА СТАИ</p><h2 id="board-title">Карта города</h2></div><output class="wallet"></output></header>
     <nav class="board-nav map-tools"><button id="board-home" class="text-button">На крышу</button><button id="board-challenges" class="text-button" aria-pressed="false">Испытания</button><button id="board-nest" class="text-button">Гнездо и стая</button></nav>
-    <div class="city-map" aria-label="Шесть районов">
-      <canvas id="city-art" width="384" height="218" aria-hidden="true"></canvas>
-      <nav id="district-nav" aria-label="Районы города"></nav>
+    <div id="campaign-catalog" class="campaign-catalog">
+      <div>
+        <div class="city-map" aria-label="Шесть районов">
+          <canvas id="city-art" width="384" height="218" aria-hidden="true"></canvas>
+          <nav id="district-nav" aria-label="Районы города"></nav>
+        </div>
+        <p id="city-progress" class="city-progress"></p>
+      </div>
+      <div>
+        <h3 class="chapter-index-title">Все главы кампании</h3>
+        <nav id="chapter-nav" class="chapter-nav" aria-label="Главы кампании"></nav>
+      </div>
     </div>
-    <p id="city-progress" class="city-progress"></p>
-    <div class="city-casework">
-      <div><nav id="chapter-nav" class="chapter-nav" aria-label="Главы кампании"></nav><p id="chapter-progress" class="eyebrow"></p><div id="order-list" class="order-list"></div></div>
-      <div id="order-brief"><h3 id="order-title"></h3><p id="order-intro"></p><p id="order-unlock"></p><details id="order-route" hidden><summary>Весь маршрут</summary><p id="order-route-text"></p></details><p id="order-record"></p><button id="launch-order" class="menu-item primary">На дело</button></div>
+    <div id="campaign-orders" hidden>
+      <button id="chapter-back" class="text-button">‹ Все главы</button>
+      <p id="order-district" class="eyebrow"></p>
+      <h3 id="order-heading" tabindex="-1"></h3>
+      <p id="chapter-progress" class="eyebrow"></p>
+      <div class="city-casework">
+        <div id="order-list" class="order-list"></div>
+        <div id="order-brief"><h3 id="order-title"></h3><p id="order-intro"></p><p id="order-unlock"></p><details id="order-route" hidden><summary>Весь маршрут</summary><p id="order-route-text"></p></details><p id="order-record"></p><button id="launch-order" class="menu-item primary">На дело</button></div>
+      </div>
     </div>
   </section>
   <section id="nest-screen" class="screen nest-screen" aria-labelledby="nest-title" hidden>

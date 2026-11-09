@@ -8,6 +8,7 @@
   const pauseCode=release?.target==='playgama'?'KeyP':'Escape';
   const defaults={music:35,effects:65,hints:true,leftHanded:false,muted:false,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches};
   let settings={...defaults}, screen='menu', backTo='menu', hasRun=false, selected=CAMPAIGN[0], activeMission=CAMPAIGN[0], saving=false;
+  let boardView='chapters', boardDistrict=CHAPTERS[0].district;
   let progressReady=false, roofTimer=0;
   let adAttempted=false, transition=false, prefsTimer=0;
   const isEnglish=()=>I18N.language()==='en';
@@ -65,15 +66,15 @@
       area.querySelector('button:not([hidden])')?.focus({preventScroll:true});
     }
   }
-  function canResume() {return hasRun&&GAME.status().phase==='play';}
+  function canResume(next) {return hasRun&&activeMission===next&&GAME.status().phase==='play';}
   function updateRoof() {
     clearTimeout(roofTimer);
     if(screen!=='menu'||document.hidden) return;
     const save=PROGRESS.state();
     const done=CAMPAIGN.filter(m=>save.completed[m.id]).length;
-    const next=canResume()?activeMission:PROGRESS.next();
-    byId('continue').disabled=!progressReady||saving||(!canResume()&&!PROGRESS.unlocked(next));
-    byId('continue-label').textContent=T(done||canResume()?'Продолжить дело':'Первое дело');
+    const next=PROGRESS.next();
+    byId('continue').disabled=!progressReady||saving||!PROGRESS.unlocked(next);
+    byId('continue-label').textContent=T(done||canResume(next)?'Продолжить дело':'Первое дело');
     byId('continue-job').textContent=missionName(next);
     byId('roof-progress').textContent=done+'/150 · '+(isEnglish()?'Jobs closed':'Дел закрыто');
     const canvas=byId('title-art');
@@ -115,14 +116,14 @@
     clickSound();
     show(name);
   }
-  byId('play').addEventListener('click',async()=>{await PROGRESS.ready;selected=PROGRESS.next();clickSound();show('board');});
+  byId('play').addEventListener('click',async()=>{await PROGRESS.ready;clickSound();openBoard('chapters');});
   byId('restart').addEventListener('click',startRun);
   byId('again').addEventListener('click',()=>leaveResult(startRun));
   byId('resume').addEventListener('click',resume);
   byId('continue').addEventListener('click',()=>{
-    if(canResume()) {resume();return;}
     const next=PROGRESS.next();
     if(!PROGRESS.unlocked(next)) return;
+    if(canResume(next)) {resume();return;}
     activeMission=next;startRun();
   });
   byId('pause').addEventListener('click',pause);
@@ -194,6 +195,7 @@
       event.preventDefault();
       if(screen==='playing') pause();
       else if(screen==='pause') resume();
+      else if(screen==='board'&&boardView!=='chapters') returnToChapters();
       else if(['board','nest'].includes(screen)) show('menu');
       else if(['settings','help','credits'].includes(screen)) show(backTo);
       return;
@@ -248,57 +250,116 @@
     ['Сеть доставок','Delivery network'],['Восстановление проходов','Repair routes'],
     ['Толпы и отвлечения','Crowds and distractions'],['Финал депо','Depot finale'],['Дела между районами','Jobs across districts']
   ];
+  const chapters=CHAPTERS.map(chapter=>({...chapter,jobs:CAMPAIGN.filter(m=>m.chapter===chapter.id)}));
+  const districts=ROOF_ART.districts.map(district=>({...district,chapters:chapters.filter(c=>c.district===district.id)}));
+  const chapterName=c=>isEnglish()?c.en:c.ru;
+  const districtName=id=>{
+    const district=districts.find(d=>d.id===id);
+    return isEnglish()?district.en:district.ru;
+  };
+  function prerequisite(m,isChallenge) {
+    return isChallenge?CAMPAIGN.find(job=>job.id===(m.requires||'territory')):CAMPAIGN[CAMPAIGN.indexOf(m)-1];
+  }
   function chooseOrder(list,save) {
     return list.find(m=>!save.completed[m.id]&&PROGRESS.unlocked(m))||list.find(m=>!save.completed[m.id])||list[0];
   }
-  function renderDistricts(save,isChallenge) {
+  function resetBoardScroll() {
+    byId('board-screen').scrollTop=0;
+    window.scrollTo(0,0);
+  }
+  function openBoard(view) {
+    selected=PROGRESS.next();
+    const isChallenge=CHALLENGES.includes(selected);
+    if(!isChallenge) boardDistrict=chapters.find(c=>c.id===selected.chapter).district;
+    boardView=view==='chapters'?'chapters':isChallenge?'challenges':'orders';
+    show('board');resetBoardScroll();
+  }
+  function openOrders(view,mission) {
+    boardView=view;selected=mission;
+    renderBoard();resetBoardScroll();
+    byId('order-heading').focus({preventScroll:true});
+  }
+  function returnToChapters() {
+    boardView='chapters';renderBoard();
+    const chapter=CAMPAIGN.includes(selected)?byId('chapter-nav').querySelector(`[data-chapter="${selected.chapter}"]`):null;
+    const target=chapter||byId('chapter-nav').querySelector(`[data-chapter-district="${boardDistrict}"] button`);
+    target?.scrollIntoView({block:'nearest'});
+    target?.focus({preventScroll:true});
+  }
+  function renderChapterIndex(save) {
     const nav=byId('district-nav');
-    for(const {id,x,y,ru,en} of ROOF_ART.districts) {
-      const jobs=CAMPAIGN.filter(m=>m.district===id);
-      const done=jobs.filter(m=>save.completed[m.id]).length;
-      const open=jobs.some(PROGRESS.unlocked);
+    const index=byId('chapter-nav');index.replaceChildren();
+    for(const {id,x,y,chapters:districtChapters} of districts) {
+      const open=districtChapters.filter(c=>c.jobs.some(PROGRESS.unlocked)).length;
       let button=nav.querySelector(`[data-district="${id}"]`);
       if(!button) {
         button=document.createElement('button');button.className='district-pin';button.dataset.district=id;
         button.style.setProperty('--x',x/384*100+'%');button.style.setProperty('--y',y/218*100+'%');
         button.append(document.createElement('strong'),document.createElement('small'));
         button.addEventListener('click',()=>{
-          if(selected.district!==id||selected.challenge||selected.id.startsWith('challenge-')) selected=chooseOrder(jobs,PROGRESS.state());
-          SOUND.effect('click');renderBoard();
+          boardDistrict=id;SOUND.effect('click');renderBoard();
+          const group=index.querySelector(`[data-chapter-district="${id}"]`);
+          group.scrollIntoView({block:'nearest'});
+          group.querySelector('button').focus({preventScroll:true});
         });
         nav.append(button);
       }
-      button.setAttribute('aria-pressed',String(!isChallenge&&selected.district===id));
-      button.dataset.locked=String(!open);
-      button.firstElementChild.textContent=isEnglish()?en:ru;
-      button.lastElementChild.textContent=open?done+'/'+jobs.length:T('Закрыт');
+      button.setAttribute('aria-pressed',String(boardDistrict===id));
+      button.dataset.locked=String(open===0);
+      button.firstElementChild.textContent=districtName(id);
+      button.lastElementChild.textContent=open+'/'+districtChapters.length+' '+T('глав');
+      const group=document.createElement('section');group.dataset.chapterDistrict=id;
+      group.className='chapter-district';group.dataset.active=String(boardDistrict===id);
+      const label=document.createElement('h4');label.textContent=districtName(id);group.append(label);
+      for(const chapter of districtChapters) {
+        const locked=!chapter.jobs.some(PROGRESS.unlocked);
+        const done=chapter.jobs.filter(m=>save.completed[m.id]).length;
+        const entry=document.createElement('button');entry.className='chapter-entry';
+        entry.dataset.chapter=chapter.id;entry.dataset.locked=String(locked);
+        if(CAMPAIGN.includes(selected)&&selected.chapter===chapter.id)entry.setAttribute('aria-current','true');
+        const number=document.createElement('span');number.className='chapter-number';
+        number.textContent=String(chapter.id).padStart(2,'0');
+        const info=document.createElement('span');info.className='chapter-info';
+        const name=document.createElement('strong');name.textContent=chapterName(chapter);
+        const status=document.createElement('small');
+        const previous=prerequisite(chapter.jobs[0],false);
+        status.textContent=locked&&previous?T('После дела №')+(CAMPAIGN.indexOf(previous)+1):done+'/'+chapter.jobs.length;
+        info.append(name,status);
+        const icon=document.createElement('span');
+        if(locked){icon.className='lock-mark';icon.setAttribute('aria-label',T('Закрыто'));}
+        else if(done===chapter.jobs.length){icon.className='done-mark';icon.setAttribute('aria-label',T('Выполнено'));}
+        else {icon.textContent='›';icon.setAttribute('aria-hidden','true');}
+        entry.append(number,info,icon);
+        entry.addEventListener('click',()=>{
+          boardDistrict=id;SOUND.effect('click');openOrders('orders',chooseOrder(chapter.jobs,PROGRESS.state()));
+        });
+        group.append(entry);
+      }
+      index.append(group);
     }
-    byId('city-progress').textContent=CAMPAIGN.filter(m=>save.completed[m.id]).length+'/150 '+T('дел')+' · '+CHAPTERS.filter(c=>CAMPAIGN.filter(m=>m.chapter===c.id).every(m=>save.completed[m.id])).length+'/15 '+T('глав');
-    byId('board-challenges').setAttribute('aria-pressed',String(isChallenge));
+    const done=CAMPAIGN.filter(m=>save.completed[m.id]).length;
+    const closed=chapters.filter(c=>c.jobs.every(m=>save.completed[m.id])).length;
+    byId('city-progress').textContent=done+'/'+CAMPAIGN.length+' '+T('дел')+' · '+closed+'/'+chapters.length+' '+T('глав');
   }
   function renderBoard() {
     renderWallet();
+    const save=PROGRESS.state();
+    const isIndex=boardView==='chapters', isChallenge=boardView==='challenges';
+    byId('campaign-catalog').hidden=!isIndex;
+    byId('campaign-orders').hidden=isIndex;
+    byId('board-challenges').setAttribute('aria-pressed',String(isChallenge));
+    showSaveError();
+    if(isIndex){renderChapterIndex(save);return;}
+
     const list=byId('order-list');
     list.replaceChildren();
-    const save=PROGRESS.state();
-    const isChallenge=selected.id.startsWith('challenge-');
-    const chapter=selected.chapter||1;
-    const districtJobs=CAMPAIGN.filter(m=>m.district===selected.district);
-    renderDistricts(save,isChallenge);
-    const nav=byId('chapter-nav');nav.replaceChildren();
-    const select=document.createElement('select');select.setAttribute('aria-label',I18N.language()==='en'?'Campaign chapter':'Глава кампании');
-    for(const c of CHAPTERS.filter(c=>districtJobs.some(m=>m.chapter===c.id))) {
-      const option=document.createElement('option');option.value=c.id;option.textContent=c.id+'. '+(isEnglish()?c.en:c.ru);select.append(option);
-    }
-    select.value=String(chapter);
-    select.addEventListener('change',()=>{
-      selected=chooseOrder(districtJobs.filter(m=>m.chapter===Number(select.value)),PROGRESS.state());
-      renderBoard();nav.querySelector('select')?.focus({preventScroll:true});
-    });
-    if(!isChallenge) nav.append(select);
-    const available=isChallenge?CHALLENGES:districtJobs.filter(m=>m.chapter===chapter);
-    const chapterJobs=isChallenge?CHALLENGES:CAMPAIGN.filter(m=>m.chapter===chapter);
-    byId('chapter-progress').textContent=(isChallenge?T('Испытания'):chapterThemes[chapter-1][isEnglish()?1:0])+' · '+chapterJobs.filter(m=>save.completed[m.id]).length+'/'+chapterJobs.length;
+    const chapter=chapters.find(c=>c.id===selected.chapter);
+    const available=isChallenge?CHALLENGES:chapter.jobs;
+    byId('order-district').textContent=isChallenge?'':districtName(chapter.district);
+    byId('order-district').hidden=isChallenge;
+    byId('order-heading').textContent=isChallenge?T('Испытания'):T('Глава')+' '+chapter.id+' · '+chapterName(chapter);
+    const counts=available.filter(m=>save.completed[m.id]).length+'/'+available.length;
+    byId('chapter-progress').textContent=isChallenge?counts:chapterThemes[chapter.id-1][isEnglish()?1:0]+' · '+counts;
     for(const [index,m] of available.entries()) {
       const row=document.createElement('button');
       row.className='order-row'+(m.id===selected.id?' selected':'');
@@ -308,8 +369,14 @@
       row.setAttribute('aria-pressed',String(m.id===selected.id));
       const number=document.createElement('span');number.textContent=String(isChallenge?index+1:CAMPAIGN.indexOf(m)+1).padStart(2,'0');
       const name=document.createElement('span');name.textContent=missionName(m);
-      const status=document.createElement('span');status.textContent=save.completed[m.id]?'':locked?'—':'›';
+      if(!isChallenge&&m.district!==chapter.district) {
+        const location=document.createElement('small');location.className='order-location';
+        location.textContent=districtName(m.district);name.append(location);
+      }
+      const status=document.createElement('span');
       if(save.completed[m.id]){status.className='done-mark';status.setAttribute('aria-label',T('Выполнено'));}
+      else if(locked){status.className='lock-mark';status.setAttribute('aria-label',T('Закрыто'));}
+      else {status.textContent='›';status.setAttribute('aria-hidden','true');}
       row.append(number,name,status);
       row.addEventListener('click',()=>{
         selected=m;SOUND.effect('click');renderBoard();
@@ -325,7 +392,7 @@
       const rules={quiet:['Третья тревога сорвёт заказ','A third alarm fails the job'],pursuit:['Груз привлекает дворника','Cargo attracts the sweeper'],rival:['Район оспаривает соперник','A rival contests this district'],rush:['Тележка движется быстрее','The cart moves faster'],storm:['Сильный ветер','Strong wind'],crowd:['Толпа меняет маршруты','Crowds change their routes']};
       byId('order-intro').textContent+=' · '+selected.rules.map(rule=>rules[rule][english?1:0]).join(' · ');
     }
-    const prereq=CAMPAIGN.find(m=>m.id===selected.requires)||(!isChallenge&&CAMPAIGN[CAMPAIGN.indexOf(selected)-1])||(isChallenge&&CAMPAIGN.find(m=>m.id==='territory'));
+    const prereq=prerequisite(selected,isChallenge);
     const unlocked=PROGRESS.unlocked(selected);
     byId('order-unlock').textContent=!unlocked&&prereq?(english?'Opens after ':'Откроется после дела «')+missionName(prereq)+(english?'':'»'):english&&selected.unlockEn?selected.unlockEn:T(selected.unlock);
     byId('order-route').hidden=!selected.steps;
@@ -333,7 +400,6 @@
     const best=save.completed[selected.id];
     byId('order-record').textContent=best?T('Рекорд')+' '+best.best.toFixed(1)+' '+T('с')+' · '+medalName(best.medal)+' · '+T('Награда уже получена'):'+'+selected.reward+' '+T('крошек');
     byId('launch-order').disabled=!unlocked;
-    showSaveError();
   }
   function renderNest() {
     renderWallet();
@@ -364,8 +430,9 @@
   }
   byId('open-nest').addEventListener('click',async()=>{await PROGRESS.ready;open('nest');});
   byId('board-nest').addEventListener('click',()=>show('nest'));
+  byId('chapter-back').addEventListener('click',()=>{SOUND.effect('click');returnToChapters();});
   byId('board-challenges').addEventListener('click',()=>{
-    selected=chooseOrder(CHALLENGES,PROGRESS.state());SOUND.effect('click');renderBoard();
+    SOUND.effect('click');openOrders('challenges',chooseOrder(CHALLENGES,PROGRESS.state()));
   });
   byId('nest-orders').addEventListener('click',()=>show('board'));
   for(const id of ['board-home','nest-home'])byId(id).addEventListener('click',()=>show('menu'));
@@ -373,7 +440,7 @@
     if(!PROGRESS.unlocked(selected)) return;
     activeMission=selected;startRun();
   });
-  byId('next-order').addEventListener('click',()=>leaveResult(()=>{selected=PROGRESS.next();show('board');}));
+  byId('next-order').addEventListener('click',()=>leaveResult(()=>openBoard('orders')));
   window.addEventListener('progress-changed',()=>{
     showSaveError();
     if(screen==='board')renderBoard();
@@ -394,11 +461,24 @@
     app.addEventListener('contextmenu',event=>event.preventDefault());
     byId('export-save').addEventListener('click',async()=>{
       const data=await PROGRESS.exportSave();
+      if(release.target==='android') {
+        try {await release.host.exportSave(data);}
+        catch {byId('transfer-note').textContent=T('Не удалось сохранить файл.');}
+        return;
+      }
       const url=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
       const link=document.createElement('a');link.href=url;link.download='pigeon-mafia-save.json';link.click();
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     });
-    byId('import-save').addEventListener('click',()=>byId('save-file').click());
+    byId('import-save').addEventListener('click',async()=>{
+      if(release.target!=='android') {byId('save-file').click();return;}
+      try {
+        const value=await release.host.importSave();
+        if(value===null)return;
+        await PROGRESS.importSave(value);
+        byId('transfer-note').textContent=T('Сохранение восстановлено.');
+      } catch(e){byId('transfer-note').textContent=T(e.message);}
+    });
     byId('save-file').addEventListener('change',async event=>{
       const file=event.target.files[0];event.target.value='';if(!file)return;
       try {
@@ -417,6 +497,25 @@
       release.gameplay(!blocked&&screen==='playing'&&!document.hidden);
       setAudioLevels();
     });
+  }
+  if(release?.target==='android') {
+    window.addEventListener('android-background',()=>{
+      pause();
+      if(prefsTimer) {
+        clearTimeout(prefsTimer);
+        prefsTimer=0;
+        PROGRESS.setPreferences({...settings,language:I18N.language()}).catch(showSaveError);
+      }
+    });
+    window.androidBack=()=>{
+      if(saving||transition||release.state().blocked)return true;
+      if(screen==='menu')return false;
+      if(screen==='playing')pause();
+      else if(screen==='board'&&boardView!=='chapters')returnToChapters();
+      else if(['settings','help','credits'].includes(screen))show(backTo);
+      else show('menu');
+      return true;
+    };
   }
   PROGRESS.ready.then(()=>{
     progressReady=true;
